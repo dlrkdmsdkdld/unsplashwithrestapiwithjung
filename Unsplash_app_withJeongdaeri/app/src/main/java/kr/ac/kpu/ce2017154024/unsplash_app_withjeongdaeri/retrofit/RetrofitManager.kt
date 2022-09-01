@@ -2,14 +2,14 @@ package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.retrofit
 
 import android.util.Log
 import com.google.gson.JsonElement
-import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.Photo
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.model.Photo
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.API
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.Constants.TAG
-import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATE
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATUS
 
 import retrofit2.Call
 import retrofit2.Response
-import kotlin.math.log
+import java.text.SimpleDateFormat
 
 class RetrofitManager {
     companion object{
@@ -20,7 +20,7 @@ class RetrofitManager {
     private val iRetrofit : IRetrofit? = RetrofitClient.getClient(API.BASE_URL)?.create(IRetrofit::class.java)
     //끝났을때 결과를 string -> unit
     //사진 검색 api 호출
-    fun searchPhotos(searchTerm:String?,completion:(RESPONSE_STATE, String) -> Unit){
+    fun searchPhotos(searchTerm:String?,completion:(RESPONSE_STATUS, ArrayList<Photo>?) -> Unit){
         val term = searchTerm ?: ""
         //val call = iRetrofit?.searchPhotos(searchTerm = term) ?: return 과 같은 뜻임
         val call = iRetrofit?.searchPhotos(searchTerm = term).let {
@@ -39,13 +39,29 @@ class RetrofitManager {
                             val results = body.getAsJsonArray("results")
                             val total = body.get("total").asInt
                             Log.d(TAG,"RetrofitManager - onResponse() called / total: $total")
+                            if(total==0){//데이터가 없으면 nocontent로 보냄
+                                completion(RESPONSE_STATUS.NO_CONTENT,null)
+                            }else{
                             results.forEach { resultItem->
                                 val resultItmeObject = resultItem.asJsonObject
+
+                                val user = resultItmeObject.get("user").asJsonObject
+                                val username :String =user.get("username").asString
+                                val likeCounts:Int = resultItmeObject.get("likes").asInt
+                                val thumbnailLink = resultItmeObject.get("urls").asJsonObject.get("thumb").asString
+                                val createdAt = resultItmeObject.get("created_at").asString
+                                val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                                val formatter = SimpleDateFormat("yyyy년\nMM월 dd일")
+                                val outputDateString = formatter.format(parser.parse(createdAt))
+                                val photoItem = Photo(author = username, likesCount = likeCounts, thumbnail =thumbnailLink, createdAt = outputDateString)
+                                parsedPhotoDataArray.add(photoItem)
+                            }
+                            completion(RESPONSE_STATUS.OKAY,parsedPhotoDataArray)
                             }
                         }
-//                        completion(RESPONSE_STATE.OKAY,response.body().toString())
                     }
                 }
+
 
 
 
@@ -54,7 +70,7 @@ class RetrofitManager {
 
             override fun onFailure(call: Call<JsonElement>, t: Throwable) {
                 Log.d(TAG,"Retrofitmanager - onFailure() called /t:$t")
-                completion(RESPONSE_STATE.FAIL,t.toString())
+                completion(RESPONSE_STATUS.FAIL,null)
             }
 
         })

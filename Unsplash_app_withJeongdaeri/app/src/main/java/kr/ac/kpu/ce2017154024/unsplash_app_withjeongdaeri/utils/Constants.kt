@@ -3,9 +3,10 @@ package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils
 object Constants {
     const val TAG : String = "로그"
 }
-enum class RESPONSE_STATE{
+enum class RESPONSE_STATUS{
     OKAY,
-    FAIL
+    FAIL,
+    NO_CONTENT
 }
 enum class SEARCH_TYPE {
     PHOTO,

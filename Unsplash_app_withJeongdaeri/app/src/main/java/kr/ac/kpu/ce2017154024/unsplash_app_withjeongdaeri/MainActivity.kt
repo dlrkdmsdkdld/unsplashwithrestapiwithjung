@@ -1,10 +1,9 @@
 package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -13,7 +12,7 @@ import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.SEARCH_TYPE
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_button_search.*
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.retrofit.RetrofitManager
-import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATE
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATUS
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.onMyTextChanged
 
 class MainActivity : AppCompatActivity() {
@@ -74,22 +73,35 @@ class MainActivity : AppCompatActivity() {
         // 검색 버튼 클릭시
         btn_search.setOnClickListener {
             Log.d(TAG, "MainActivity - 검색 버튼이 클릭되었다. / currentSearchType : $currentSearchType")
+            this.handleSearchButtonUi()
+            val userSearchInput=search_term_edit_text.text.toString()
             //검색 api 호출
             RetrofitManager.instance.searchPhotos(searchTerm = search_term_edit_text.text.toString(), completion = {
-                    responseState,responseBody ->
+                    responseState,responseDataArrayList ->
 
                 when(responseState){
-                    RESPONSE_STATE.OKAY ->{
-                        Log.d(TAG, "api 호출 성공 : $responseBody ")
+                    RESPONSE_STATUS.OKAY ->{
+                        Log.d(TAG, "api 호출 성공 : ${responseDataArrayList?.size} ")
+                        val intent = Intent(this,photoCollectionActivity::class.java)
+                        val bundle = Bundle()
+                        bundle.putSerializable("photo_array_list",responseDataArrayList)
+                        intent.putExtra("array_bundle",bundle)
+                        intent.putExtra("search_term",userSearchInput)
+                        startActivity(intent)
 
                     }
-                    RESPONSE_STATE.FAIL ->{
-                        Log.d(TAG, "api 호출 실패패 : $responseBody ")
+                    RESPONSE_STATUS.FAIL ->{
+                        Log.d(TAG, "api 호출 실패패 : $responseDataArrayList ")
                         Toast.makeText(this,"api 호출 에러입니다.",Toast.LENGTH_SHORT).show()
                     }
+                    RESPONSE_STATUS.NO_CONTENT ->{
+                        Toast.makeText(this, "검색결과가 없습니다",Toast.LENGTH_SHORT).show()
+                    }
                 }
+                btn_progress.visibility=View.INVISIBLE
+                btn_search.text="검색"
+                search_term_edit_text.setText("")
             })
-            this.handleSearchButtonUi()
         }
 
 

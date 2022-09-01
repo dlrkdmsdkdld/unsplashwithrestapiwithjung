@@ -51,5 +51,7 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
     //레트로핏 로깅 인터셉터
     implementation "com.squareup.okhttp3:logging-interceptor:4.10.0"
-
+//글라이드
+    implementation 'com.github.bumptech.glide:glide:4.13.2'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
 }
