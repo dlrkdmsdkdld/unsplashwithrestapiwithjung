@@ -2,6 +2,7 @@ package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri
 
 import android.app.SearchManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -15,10 +16,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.GridLayoutManager
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_photo_collection.*
+import kotlinx.android.synthetic.main.layout_button_search.*
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.model.Photo
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.recyclerview.PhotoGridRecyclerViewAdapter
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.retrofit.RetrofitManager
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.Constants.TAG
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATUS
 
 class photoCollectionActivity:AppCompatActivity()
 ,SearchView.OnQueryTextListener
@@ -41,6 +46,8 @@ class photoCollectionActivity:AppCompatActivity()
         //설정해준 클릭리스너 , 체크리스너들 컴포넌트에 연결
         search_history_mode_switch.setOnCheckedChangeListener(this)
         clear_search_history_buttton.setOnClickListener(this)
+
+
         photoList = bundle?.getSerializable("photo_array_list") as ArrayList<Photo>
         Log.d(TAG,"photoCollectionActivity - onCreate() called / searchTerm:$searchTerm,photoList.count:${photoList.count()}")
 
@@ -110,6 +117,31 @@ class photoCollectionActivity:AppCompatActivity()
         this.mySearchView.setQuery("",false)
         this.mySearchView.clearFocus()
         this.topAppBar.collapseActionView()
+
+        RetrofitManager.instance.searchPhotos(searchTerm = p0, completion = {
+                responseState,responseDataArrayList ->
+
+            when(responseState){
+                RESPONSE_STATUS.OKAY ->{
+                    Log.d(TAG, "api 호출 성공 : ${responseDataArrayList?.size} ")
+                    this.photoGridRecyclerViewAdapter.removeAllData()
+                    this.photoGridRecyclerViewAdapter.submitList(responseDataArrayList as ArrayList<Photo>)
+                    my_photo_recycler_view.adapter=this.photoGridRecyclerViewAdapter
+
+                }
+                RESPONSE_STATUS.FAIL ->{
+                    Log.d(TAG, "api 호출 실패패 : $responseDataArrayList ")
+                    Toast.makeText(this,"api 호출 에러입니다.",Toast.LENGTH_SHORT).show()
+                }
+                RESPONSE_STATUS.NO_CONTENT ->{
+                    Toast.makeText(this, "검색결과가 없습니다",Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        })
+
+
+
         return true
     }
 

@@ -75,5 +75,57 @@ class RetrofitManager {
 
         })
     }
+    fun searchUsers(searchTerm: String?,completion:(RESPONSE_STATUS, ArrayList<Photo>?) -> Unit) {
+        val term = searchTerm ?: ""
+        //val call = iRetrofit?.searchPhotos(searchTerm = term) ?: return 과 같은 뜻임
+        val call = iRetrofit?.searchPhotos(searchTerm = term).let {
+            it
+        } ?: return
 
+        call.enqueue(object  : retrofit2.Callback<JsonElement>{
+            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
+                when (response.code()) {
+                    200 -> {
+                        response.body()?.let {
+                            var parsedPhotoDataArray = ArrayList<Photo>()
+                            val body = it.asJsonObject
+                            val results = body.getAsJsonArray("results")
+                            val total = body.get("total").asInt
+                            if (total == 0) {//데이터가 없으면 nocontent로 보냄
+                                completion(RESPONSE_STATUS.NO_CONTENT, null)
+                            } else {
+                                results.forEach { resultItem ->
+                                    val resultItmeObject = resultItem.asJsonObject
+                                    val name = resultItmeObject.get("user").asJsonObject.get("name").asString
+                                    val total_likes: Int = resultItmeObject.get("likes").asInt
+                                    val thumbnailLink =
+                                        resultItmeObject.get("user").asJsonObject.get("profile_image").asJsonObject.get("large").asString
+                                    val updated_at = resultItmeObject.get("user").asJsonObject.get("updated_at").asString
+                                    val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                                    val formatter = SimpleDateFormat("yyyy년\nMM월 dd일")
+                                    val outputDateString =
+                                        formatter.format(parser.parse(updated_at))
+
+                                    val photoItem = Photo(
+                                        author = name,
+                                        likesCount = total_likes,
+                                        thumbnail = thumbnailLink,
+                                        createdAt = outputDateString
+                                    )
+                                    parsedPhotoDataArray.add(photoItem)
+                                }
+                                completion(RESPONSE_STATUS.OKAY, parsedPhotoDataArray)
+                            }
+                        }
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
+                Log.d(TAG,"Retrofitmanager - onFailure() called /t:$t")
+                completion(RESPONSE_STATUS.FAIL,null)
+            }
+
+        })
+    }
 }

@@ -27,6 +27,9 @@ class PhotoGridRecyclerViewAdapter :RecyclerView.Adapter<PhotoItemViewHolder>(){
     fun submitList(photoList1:ArrayList<Photo>){
         this.photoList=photoList1
     }
+    fun removeAllData(){
+        this.photoList.clear()
+    }
 
 
 }
