@@ -1,4 +1,4 @@
-package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri
+package kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.activites
 
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +11,7 @@ import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.Constants.TAG
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.SEARCH_TYPE
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_button_search.*
+import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.R
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.retrofit.RetrofitManager
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.RESPONSE_STATUS
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.onMyTextChanged
