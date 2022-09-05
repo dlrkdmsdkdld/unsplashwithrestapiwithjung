@@ -17,6 +17,11 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager.*
 import androidx.recyclerview.widget.RecyclerView
+import com.jakewharton.rxbinding4.widget.textChanges
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.kotlin.subscribeBy
+import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_photo_collection.*
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.R
 import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.model.Photo
@@ -32,6 +37,7 @@ import kr.ac.kpu.ce2017154024.unsplash_app_withjeongdaeri.utils.SharedPrefMnager
 import java.util.*
 import java.util.Arrays.toString
 import java.util.Objects.toString
+import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 class photoCollectionActivity:AppCompatActivity()
@@ -49,11 +55,10 @@ ISearchHistoryRecylcerview{
     //검색기록배열
     private var searchHistoryList=ArrayList<SearchData>()
 
-
-    private var Loga=ArrayList<String>()
-    private var TimeStampa=ArrayList<String>()
     private lateinit var searchLogViewAdapter: searchLogRecyclerViewAdapater
 
+    //옵저버블 통합제거를 위한 compositeDisposable
+    private var myCompositDisposable = CompositeDisposable()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_photo_collection)
@@ -98,6 +103,12 @@ ISearchHistoryRecylcerview{
         }
 
     }
+
+    override fun onDestroy() {
+        //디스포저블 삭제
+        this.myCompositDisposable.clear()
+        super.onDestroy()
+    }
     private fun searchViewSetting(searchList:ArrayList<SearchData>){
         this.searchLogViewAdapter= searchLogRecyclerViewAdapater(this)
         this.searchLogViewAdapter.submit(searchHistoryList)
@@ -127,8 +138,9 @@ ISearchHistoryRecylcerview{
                 when(hasExpaned){
                     true -> {
                         Log.d(TAG,"서치뷰 열림")
-                        linear_searchview.visibility= View.VISIBLE
-                        handleSearchViewUI()  }
+//                        linear_searchview.visibility= View.VISIBLE
+                        handleSearchViewUI()
+                    }
                     false ->{
                         Log.d(TAG,"서치뷰 닫힘")
                         linear_searchview.visibility= View.INVISIBLE
@@ -139,6 +151,32 @@ ISearchHistoryRecylcerview{
 
             //서치 뷰에서 에딧텍스트를 가져온다
             mySearchViewEditText =this.findViewById(androidx.appcompat.R.id.search_src_text)
+            //rx바인딩을 통해 에딧텍스트 옵저버블을 만듬 글자가 변겨오딜때마다 디바운스를 통해 필터를 넣음
+            val editTextChangeObservable =mySearchViewEditText.textChanges()
+            //글자가 입력되고나서 1초후에 onNext 이벤트로 데이터 흘러보내기
+            val searchEditTextSubscription : Disposable = editTextChangeObservable.debounce(1000,TimeUnit.MILLISECONDS)
+                //IO 쓰레드에서 돌리겠다.
+                .subscribeOn(Schedulers.io())
+                    //구독을 통해 이벤트 응답받기기
+                .subscribeBy(
+                    onNext = {
+                        Log.d(TAG,"RX   onNExt: $it")
+                        //TODO:: 흘러들어온 이벤트 데이터로 api 호출
+                        if(it.isNotEmpty()){
+                            SearchPhotoAPICall(it.toString())
+                        }
+                    },
+                    onComplete = {
+                        Log.d(TAG,"RX   onComplete")
+
+                    },
+                    onError = {
+                        Log.d(TAG,"RX   onError")
+
+                    }
+                )
+            //compositeDisposalbe 에 추가가
+           myCompositDisposable.add(searchEditTextSubscription)
 
         }
         this.mySearchViewEditText.apply {
@@ -177,7 +215,9 @@ ISearchHistoryRecylcerview{
         if (userInputText.count()==12){
             Toast.makeText(this,"검색어는 12자 까지만 입력가능합니다",Toast.LENGTH_SHORT).show()
         }
-
+//        if(userInputText.length in 1..12){
+//            SearchPhotoAPICall(userInputText)
+//        }
         return true
     }
 

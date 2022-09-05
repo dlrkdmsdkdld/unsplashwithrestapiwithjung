@@ -9,7 +9,7 @@ class app : Application(){
     }
 
     override fun onCreate() {
-        super.onCreate()
         instance = this
+        super.onCreate()
     }
 }
